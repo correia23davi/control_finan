@@ -1,0 +1,61 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
+
+:root {
+  --font-sans: 'Outfit', sans-serif;
+  --font-serif: 'Outfit', sans-serif;
+  --font-mono: 'DM Mono', monospace;
+
+  --color-surface: #F7F6F2;
+  --color-sidebar: #111318;
+  --color-sidebar-hover: #1E2028;
+  --color-card: #FFFFFF;
+  --color-border: #E4E2DC;
+  --color-text: #1A1A1A;
+  --color-muted: #6B6860;
+  --color-positive: #16A34A;
+  --color-positive-bg: #F0FDF4;
+  --color-negative: #DC2626;
+  --color-negative-bg: #FEF2F2;
+  --color-accent: #2563EB;
+  --color-accent-bg: #EFF6FF;
+  --color-warning: #D97706;
+  --color-warning-bg: #FFFBEB;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Outfit', sans-serif;
+  background-color: #F7F6F2;
+  color: #1A1A1A;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+img, svg {
+  max-width: 100%;
+}
+
+button {
+  font-family: inherit;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 5px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #D1CBC2;
+  border-radius: 3px;
+}
