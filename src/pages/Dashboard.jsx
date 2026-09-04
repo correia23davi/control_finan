@@ -1,5 +1,5 @@
 import StatCard from '../components/StatCard.jsx'
-import { formatBRL, formatDate } from '../utils.js'
+import { formatBRL, formatDate, addMonths } from '../utils.js'
 
 export default function Dashboard({ incomes, expenses, goals, isMobile }) {
   const totalIncome = incomes.reduce((s, i) => s + i.amount, 0)
@@ -90,7 +90,7 @@ export default function Dashboard({ incomes, expenses, goals, isMobile }) {
                   borderBottom: i < recentAll.length - 1 ? '1px solid #F3F2EE' : 'none',
                 }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0, flex: 1 }}>
                   <div
                     style={{
                       width: 8,
@@ -100,12 +100,12 @@ export default function Dashboard({ incomes, expenses, goals, isMobile }) {
                       flexShrink: 0,
                     }}
                   />
-                  <div>
-                    <div style={{ fontSize: 13, color: '#1A1A1A', fontWeight: 500 }}>{item.description}</div>
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontSize: 13, color: '#1A1A1A', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.description}</div>
                     <div style={{ fontSize: 11, color: '#9CA3AF', marginTop: 1 }}>{formatDate(item.date)}</div>
                   </div>
                 </div>
-                <div style={{ fontSize: 13, fontWeight: 600, fontFamily: 'var(--font-mono)', color: item.type === 'income' ? '#16A34A' : '#DC2626' }}>
+                <div style={{ fontSize: 13, fontWeight: 600, fontFamily: 'var(--font-mono)', color: item.type === 'income' ? '#16A34A' : '#DC2626', flexShrink: 0, whiteSpace: 'nowrap', marginLeft: 10 }}>
                   {item.type === 'income' ? '+' : '-'}{formatBRL(item.amount)}
                 </div>
               </div>
@@ -170,14 +170,17 @@ export default function Dashboard({ incomes, expenses, goals, isMobile }) {
               const pct = (exp.currentInstallment / exp.installments) * 100
               return (
                 <div key={exp.id} style={{ padding: '14px 16px', backgroundColor: '#FAFAF8', borderRadius: 8, border: '1px solid #F3F2EE' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
-                    <div>
-                      <div style={{ fontSize: 13, color: '#1A1A1A', fontWeight: 500 }}>{exp.description}</div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8, gap: 10 }}>
+                    <div style={{ minWidth: 0, overflow: 'hidden' }}>
+                      <div style={{ fontSize: 13, color: '#1A1A1A', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{exp.description}</div>
                       <div style={{ fontSize: 11, color: '#9CA3AF', marginTop: 2 }}>
                         {exp.currentInstallment}/{exp.installments} · {remaining} restantes
                       </div>
+                      <div style={{ fontSize: 11, color: '#D97706', marginTop: 2 }}>
+                        Termina em {formatDate(addMonths(exp.date, exp.installments - 1))}
+                      </div>
                     </div>
-                    <div style={{ fontSize: 12, color: '#D97706', fontFamily: 'var(--font-mono)', fontWeight: 600 }}>
+                    <div style={{ fontSize: 12, color: '#D97706', fontFamily: 'var(--font-mono)', fontWeight: 600, flexShrink: 0, whiteSpace: 'nowrap' }}>
                       {formatBRL(exp.amount * remaining)}
                     </div>
                   </div>

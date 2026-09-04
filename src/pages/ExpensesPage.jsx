@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { todayISO } from '../db.js'
-import { formatBRL, formatDate, sanitizeDecimalInput, sanitizeIntegerInput } from '../utils.js'
+import { formatBRL, formatDate, maskCurrencyInput, unmaskCurrency, sanitizeIntegerInput, addMonths } from '../utils.js'
 
 const CATEGORIES = ['Alimentação', 'Moradia', 'Transporte', 'Saúde', 'Tecnologia', 'Lazer', 'Educação', 'Outros']
 
@@ -21,20 +21,22 @@ export default function ExpensesPage({ expenses, onAdd, onRemove, isMobile }) {
   const [category, setCategory] = useState('Outros')
   const [isInstallment, setIsInstallment] = useState(false)
   const [installments, setInstallments] = useState('2')
+  const [date, setDate] = useState(todayISO())
   const [error, setError] = useState('')
 
   function handleAdd(e) {
     e.preventDefault()
     if (!description.trim()) { setError('Informe uma descrição.'); return }
-    const val = parseFloat(amount.replace(',', '.'))
+    const val = unmaskCurrency(amount)
     if (isNaN(val) || val <= 0) { setError('Informe um valor válido.'); return }
     const parts = isInstallment ? parseInt(installments) : 1
     if (isInstallment && (parts < 2 || parts > 60)) { setError('Parcelas: entre 2 e 60.'); return }
+    if (!date) { setError('Informe a data.'); return }
     setError('')
     onAdd({
       description: description.trim(),
       amount: isInstallment ? val / parts : val,
-      date: todayISO(),
+      date,
       installments: parts,
       currentInstallment: 1,
       category,
@@ -43,6 +45,7 @@ export default function ExpensesPage({ expenses, onAdd, onRemove, isMobile }) {
     setAmount('')
     setInstallments('2')
     setIsInstallment(false)
+    setDate(todayISO())
   }
 
   const total = expenses.reduce((s, e) => s + e.amount, 0)
@@ -112,7 +115,7 @@ export default function ExpensesPage({ expenses, onAdd, onRemove, isMobile }) {
                 type="text"
                 inputMode="decimal"
                 value={amount}
-                onChange={e => setAmount(sanitizeDecimalInput(e.target.value))}
+                onChange={e => setAmount(maskCurrencyInput(e.target.value))}
                 placeholder="0,00"
                 style={{ ...inputStyle, fontFamily: 'var(--font-mono)' }}
                 onFocus={e => (e.target.style.borderColor = '#DC2626')}
@@ -178,33 +181,33 @@ export default function ExpensesPage({ expenses, onAdd, onRemove, isMobile }) {
                   onFocus={e => (e.target.style.borderColor = '#DC2626')}
                   onBlur={e => (e.target.style.borderColor = '#E4E2DC')}
                 />
-                {amount && !isNaN(parseFloat(amount.replace(',', '.'))) && (
+                {amount && !isNaN(unmaskCurrency(amount)) && (
                   <span style={{ fontSize: 12, color: '#9CA3AF', fontFamily: 'var(--font-mono)' }}>
-                    = {formatBRL(parseFloat(amount.replace(',', '.')) / parseInt(installments || '1'))}/mês
+                    = {formatBRL(unmaskCurrency(amount) / parseInt(installments || '1'))}/mês
                   </span>
                 )}
               </div>
             )}
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-              <div style={{ fontSize: 12, fontWeight: 500, color: '#6B6860', letterSpacing: '0.04em', textTransform: 'uppercase' }}>Data</div>
-              <div style={{
-                height: 42,
-                padding: '0 14px',
-                border: '1.5px solid #E4E2DC',
-                borderRadius: 8,
-                fontSize: 13,
-                fontFamily: 'var(--font-mono)',
-                color: '#9CA3AF',
-                backgroundColor: '#F5F4F2',
-                display: 'flex',
-                alignItems: 'center',
-                whiteSpace: 'nowrap',
-              }}>
-                {formatDate(todayISO())}
-              </div>
+              <label style={{ fontSize: 12, fontWeight: 500, color: '#6B6860', letterSpacing: '0.04em', textTransform: 'uppercase' }}>Data</label>
+              <input
+                type="date"
+                value={date}
+                onChange={e => setDate(e.target.value)}
+                style={{ ...inputStyle, width: 'auto' }}
+                onFocus={e => (e.target.style.borderColor = '#DC2626')}
+                onBlur={e => (e.target.style.borderColor = '#E4E2DC')}
+              />
             </div>
           </div>
+
+          {/* Previsão da última parcela */}
+          {isInstallment && date && parseInt(installments) >= 2 && (
+            <div style={{ fontSize: 12, color: '#D97706', backgroundColor: '#FFFBEB', padding: '8px 12px', borderRadius: 6, width: 'fit-content' }}>
+              Última parcela prevista para: <strong>{formatDate(addMonths(date, parseInt(installments) - 1))}</strong>
+            </div>
+          )}
 
           {error && <div style={{ fontSize: 12, color: '#DC2626' }}>{error}</div>}
 
@@ -258,7 +261,7 @@ export default function ExpensesPage({ expenses, onAdd, onRemove, isMobile }) {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
             {categoryBreakdown.map(item => (
               <div key={item.category}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6, gap: 8, flexWrap: 'wrap' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     <span
                       style={{
@@ -325,13 +328,13 @@ export default function ExpensesPage({ expenses, onAdd, onRemove, isMobile }) {
                 onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#FAFAF8')}
                 onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <div style={{ width: 36, height: 36, borderRadius: 8, backgroundColor: '#FEF2F2', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0, flex: 1, flexWrap: 'wrap' }}>
+                  <div style={{ width: 36, height: 36, borderRadius: 8, backgroundColor: '#FEF2F2', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, flexShrink: 0 }}>
                     ↓
                   </div>
-                  <div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <span style={{ fontSize: 14, color: '#1A1A1A', fontWeight: 500 }}>{exp.description}</span>
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                      <span style={{ fontSize: 14, color: '#1A1A1A', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 200 }}>{exp.description}</span>
                       <span style={{
                         fontSize: 11,
                         color: '#6B6860',
@@ -356,16 +359,21 @@ export default function ExpensesPage({ expenses, onAdd, onRemove, isMobile }) {
                         </span>
                       )}
                     </div>
-                    <div style={{ fontSize: 12, color: '#9CA3AF', marginTop: 2 }}>{formatDate(exp.date)}</div>
+                    <div style={{ fontSize: 12, color: '#9CA3AF', marginTop: 2 }}>
+                      {formatDate(exp.date)}
+                      {exp.installments > 1 && (
+                        <> · última parcela: {formatDate(addMonths(exp.date, exp.installments - 1))}</>
+                      )}
+                    </div>
                   </div>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexShrink: 0, marginLeft: 10 }}>
                   <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontSize: 15, fontFamily: 'var(--font-mono)', fontWeight: 600, color: '#DC2626' }}>
+                    <div style={{ fontSize: 15, fontFamily: 'var(--font-mono)', fontWeight: 600, color: '#DC2626', whiteSpace: 'nowrap' }}>
                       -{formatBRL(exp.amount)}
                     </div>
                     {exp.installments > 1 && (
-                      <div style={{ fontSize: 11, color: '#9CA3AF', marginTop: 1, fontFamily: 'var(--font-mono)' }}>
+                      <div style={{ fontSize: 11, color: '#9CA3AF', marginTop: 1, fontFamily: 'var(--font-mono)', whiteSpace: 'nowrap' }}>
                         total {formatBRL(exp.amount * exp.installments)}
                       </div>
                     )}

@@ -1,21 +1,24 @@
 import { useState } from 'react'
 import { todayISO } from '../db.js'
-import { formatBRL, formatDate, sanitizeDecimalInput } from '../utils.js'
+import { formatBRL, formatDate, maskCurrencyInput, unmaskCurrency } from '../utils.js'
 
 export default function IncomePage({ incomes, onAdd, onRemove, isMobile }) {
   const [description, setDescription] = useState('')
   const [amount, setAmount] = useState('')
+  const [date, setDate] = useState(todayISO())
   const [error, setError] = useState('')
 
   function handleAdd(e) {
     e.preventDefault()
     if (!description.trim()) { setError('Informe uma descrição.'); return }
-    const val = parseFloat(amount.replace(',', '.'))
+    const val = unmaskCurrency(amount)
     if (isNaN(val) || val <= 0) { setError('Informe um valor válido.'); return }
+    if (!date) { setError('Informe a data.'); return }
     setError('')
-    onAdd({ description: description.trim(), amount: val, date: todayISO() })
+    onAdd({ description: description.trim(), amount: val, date })
     setDescription('')
     setAmount('')
+    setDate(todayISO())
   }
 
   const total = incomes.reduce((s, i) => s + i.amount, 0)
@@ -69,7 +72,7 @@ export default function IncomePage({ incomes, onAdd, onRemove, isMobile }) {
                 type="text"
                 inputMode="decimal"
                 value={amount}
-                onChange={e => setAmount(sanitizeDecimalInput(e.target.value))}
+                onChange={e => setAmount(maskCurrencyInput(e.target.value))}
                 placeholder="0,00"
                 style={{
                   height: 42,
@@ -91,7 +94,10 @@ export default function IncomePage({ incomes, onAdd, onRemove, isMobile }) {
               <label style={{ fontSize: 12, fontWeight: 500, color: '#6B6860', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
                 Data
               </label>
-              <div
+              <input
+                type="date"
+                value={date}
+                onChange={e => setDate(e.target.value)}
                 style={{
                   height: 42,
                   padding: '0 14px',
@@ -99,15 +105,14 @@ export default function IncomePage({ incomes, onAdd, onRemove, isMobile }) {
                   borderRadius: 8,
                   fontSize: 13,
                   fontFamily: 'var(--font-mono)',
-                  color: '#9CA3AF',
-                  backgroundColor: '#F5F4F2',
-                  display: 'flex',
-                  alignItems: 'center',
-                  whiteSpace: 'nowrap',
+                  color: '#1A1A1A',
+                  backgroundColor: '#FAFAF8',
+                  outline: 'none',
+                  transition: 'border-color 0.15s',
                 }}
-              >
-                {formatDate(todayISO())}
-              </div>
+                onFocus={e => (e.target.style.borderColor = '#2563EB')}
+                onBlur={e => (e.target.style.borderColor = '#E4E2DC')}
+              />
             </div>
           </div>
 
@@ -169,17 +174,17 @@ export default function IncomePage({ incomes, onAdd, onRemove, isMobile }) {
                 onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#FAFAF8')}
                 onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <div style={{ width: 36, height: 36, borderRadius: 8, backgroundColor: '#F0FDF4', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0, flex: 1 }}>
+                  <div style={{ width: 36, height: 36, borderRadius: 8, backgroundColor: '#F0FDF4', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, flexShrink: 0 }}>
                     ↑
                   </div>
-                  <div>
-                    <div style={{ fontSize: 14, color: '#1A1A1A', fontWeight: 500 }}>{income.description}</div>
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontSize: 14, color: '#1A1A1A', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{income.description}</div>
                     <div style={{ fontSize: 12, color: '#9CA3AF', marginTop: 2 }}>{formatDate(income.date)}</div>
                   </div>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                  <div style={{ fontSize: 15, fontFamily: 'var(--font-mono)', fontWeight: 600, color: '#16A34A' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexShrink: 0, marginLeft: 10 }}>
+                  <div style={{ fontSize: 15, fontFamily: 'var(--font-mono)', fontWeight: 600, color: '#16A34A', whiteSpace: 'nowrap' }}>
                     +{formatBRL(income.amount)}
                   </div>
                   <button

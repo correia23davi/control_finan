@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { todayISO } from '../db.js'
-import { formatBRL, formatDate, sanitizeDecimalInput } from '../utils.js'
+import { formatBRL, formatDate, maskCurrencyInput, unmaskCurrency } from '../utils.js'
 
 export default function SavingsPage({ goals, onAddGoal, onRemoveGoal, onAddDeposit, onRemoveDeposit, isMobile }) {
   const [goalName, setGoalName] = useState('')
@@ -15,7 +15,7 @@ export default function SavingsPage({ goals, onAddGoal, onRemoveGoal, onAddDepos
   function handleAddGoal(e) {
     e.preventDefault()
     if (!goalName.trim()) { setGoalError('Informe o nome da meta.'); return }
-    const target = parseFloat(goalTarget.replace(',', '.'))
+    const target = unmaskCurrency(goalTarget)
     if (isNaN(target) || target <= 0) { setGoalError('Informe um valor alvo válido.'); return }
     setGoalError('')
     const newGoalId = onAddGoal({ name: goalName.trim(), targetAmount: target })
@@ -26,7 +26,7 @@ export default function SavingsPage({ goals, onAddGoal, onRemoveGoal, onAddDepos
 
   function handleAddDeposit(e) {
     e.preventDefault()
-    const val = parseFloat(depositAmount.replace(',', '.'))
+    const val = unmaskCurrency(depositAmount)
     if (isNaN(val) || val <= 0) { setDepositError('Informe um valor válido.'); return }
     setDepositError('')
     onAddDeposit(selectedGoalId, { amount: val, note: depositNote.trim() })
@@ -75,7 +75,7 @@ export default function SavingsPage({ goals, onAddGoal, onRemoveGoal, onAddDepos
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                 <label style={{ fontSize: 12, fontWeight: 500, color: '#6B6860', letterSpacing: '0.04em', textTransform: 'uppercase' }}>Valor alvo (R$)</label>
-                <input type="text" inputMode="decimal" value={goalTarget} onChange={e => setGoalTarget(sanitizeDecimalInput(e.target.value))}
+                <input type="text" inputMode="decimal" value={goalTarget} onChange={e => setGoalTarget(maskCurrencyInput(e.target.value))}
                   placeholder="0,00"
                   style={{ ...inputStyle, fontFamily: 'var(--font-mono)' }}
                   onFocus={e => (e.target.style.borderColor = '#7C3AED')}
@@ -121,10 +121,10 @@ export default function SavingsPage({ goals, onAddGoal, onRemoveGoal, onAddDepos
                   onMouseEnter={e => { if (!active) e.currentTarget.style.backgroundColor = '#FAFAF8' }}
                   onMouseLeave={e => { if (!active) e.currentTarget.style.backgroundColor = 'transparent' }}
                 >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                    <div style={{ fontSize: 14, fontWeight: 500, color: '#1A1A1A' }}>{goal.name}</div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <span style={{ fontSize: 12, fontFamily: 'var(--font-mono)', color: '#7C3AED', fontWeight: 600 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8, gap: 8 }}>
+                    <div style={{ fontSize: 14, fontWeight: 500, color: '#1A1A1A', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{goal.name}</div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+                      <span style={{ fontSize: 12, fontFamily: 'var(--font-mono)', color: '#7C3AED', fontWeight: 600, whiteSpace: 'nowrap' }}>
                         {formatBRL(saved)}
                       </span>
                       <button
@@ -139,7 +139,7 @@ export default function SavingsPage({ goals, onAddGoal, onRemoveGoal, onAddDepos
                     <div style={{ flex: 1, height: 5, backgroundColor: '#F3F2EE', borderRadius: 3, overflow: 'hidden' }}>
                       <div style={{ height: '100%', width: `${pct}%`, backgroundColor: pct >= 100 ? '#7C3AED' : '#A78BFA', borderRadius: 3, transition: 'width 0.4s ease' }} />
                     </div>
-                    <span style={{ fontSize: 11, color: '#9CA3AF', fontFamily: 'var(--font-mono)', whiteSpace: 'nowrap' }}>
+                    <span style={{ fontSize: 11, color: '#9CA3AF', fontFamily: 'var(--font-mono)', whiteSpace: 'nowrap', flexShrink: 0, overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '55%' }}>
                       {pct.toFixed(0)}% · meta {formatBRL(goal.targetAmount)}
                     </span>
                   </div>
@@ -178,7 +178,7 @@ export default function SavingsPage({ goals, onAddGoal, onRemoveGoal, onAddDepos
                   <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 12 }}>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                       <label style={{ fontSize: 12, fontWeight: 500, color: '#6B6860', letterSpacing: '0.04em', textTransform: 'uppercase' }}>Valor (R$)</label>
-                      <input type="text" inputMode="decimal" value={depositAmount} onChange={e => setDepositAmount(sanitizeDecimalInput(e.target.value))}
+                      <input type="text" inputMode="decimal" value={depositAmount} onChange={e => setDepositAmount(maskCurrencyInput(e.target.value))}
                         placeholder="0,00"
                         style={{ ...inputStyle, fontFamily: 'var(--font-mono)' }}
                         onFocus={e => (e.target.style.borderColor = '#7C3AED')}
@@ -232,15 +232,15 @@ export default function SavingsPage({ goals, onAddGoal, onRemoveGoal, onAddDepos
                     onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#FAFAF8')}
                     onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
                   >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                      <div style={{ width: 32, height: 32, borderRadius: 8, backgroundColor: '#F5F3FF', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14 }}>◎</div>
-                      <div>
-                        <div style={{ fontSize: 13, color: '#1A1A1A', fontWeight: 500 }}>{dep.note || 'Depósito'}</div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0, flex: 1 }}>
+                      <div style={{ width: 32, height: 32, borderRadius: 8, backgroundColor: '#F5F3FF', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, flexShrink: 0 }}>◎</div>
+                      <div style={{ minWidth: 0 }}>
+                        <div style={{ fontSize: 13, color: '#1A1A1A', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{dep.note || 'Depósito'}</div>
                         <div style={{ fontSize: 11, color: '#9CA3AF', marginTop: 1 }}>{formatDate(dep.date)}</div>
                       </div>
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                      <span style={{ fontSize: 14, fontFamily: 'var(--font-mono)', fontWeight: 600, color: '#7C3AED' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0, marginLeft: 10 }}>
+                      <span style={{ fontSize: 14, fontFamily: 'var(--font-mono)', fontWeight: 600, color: '#7C3AED', whiteSpace: 'nowrap' }}>
                         +{formatBRL(dep.amount)}
                       </span>
                       <button

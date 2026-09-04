@@ -39,3 +39,38 @@ export function sanitizeDecimalInput(value) {
 export function sanitizeIntegerInput(value) {
   return value.replace(/[^0-9]/g, '')
 }
+
+/**
+ * Soma (ou subtrai) meses a uma data ISO (yyyy-mm-dd), retornando outra
+ * data ISO. Usado para calcular a data da última parcela de uma despesa
+ * parcelada (data da 1ª parcela + número de parcelas).
+ */
+export function addMonths(iso, months) {
+  const [year, month, day] = iso.split('-').map(Number)
+  const date = new Date(Date.UTC(year, month - 1 + months, day))
+  return date.toISOString().split('T')[0]
+}
+
+/**
+ * Aplica uma máscara de moeda em tempo real, no formato "1.234,56".
+ * Trata os dígitos digitados como centavos (funciona como as máscaras de
+ * valor de bancos/apps financeiros): ao digitar "150000" o campo mostra
+ * "1.500,00". Usado em todos os campos de "Valor (R$)" do sistema.
+ */
+export function maskCurrencyInput(value) {
+  const digits = value.replace(/\D/g, '')
+  if (!digits) return ''
+  const cents = parseInt(digits, 10)
+  const amount = cents / 100
+  return amount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+}
+
+/**
+ * Converte um valor com máscara de moeda (ex: "1.234,56") de volta para
+ * number (ex: 1234.56). Retorna NaN se estiver vazio ou inválido.
+ */
+export function unmaskCurrency(masked) {
+  if (!masked) return NaN
+  const normalized = masked.replace(/\./g, '').replace(',', '.')
+  return parseFloat(normalized)
+}
